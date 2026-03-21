@@ -1,0 +1,8 @@
+{
+  "session_id": "abc123def456",
+  "events": [
+    { "event": "session_start", "properties": { "screen_width": 1280, "screen_height": 800 }, "timestamp": "..." },
+    { "event": "tool_selected", "properties": { "tool": "circle", "source": "keyboard" }, "timestamp": "..." },
+    { "event": "shape_drawn",   "properties": { "tool": "circle", "color": "#e94560", "stroke_width": 4, "size": 87 }, "timestamp": "..." }
+  ]
+}
