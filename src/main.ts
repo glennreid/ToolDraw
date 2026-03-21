@@ -1,3 +1,5 @@
+import { track } from './telemetry';
+
 type Tool = 'line' | 'circle' | 'rectangle';
 
 interface Point {
@@ -42,6 +44,7 @@ class DrawingApp {
     this.bindCanvas();
 
     window.addEventListener('resize', () => this.resizeCanvas());
+    track('session_start', { screen_width: window.innerWidth, screen_height: window.innerHeight });
   }
 
   // ── Canvas sizing ────────────────────────────────────────────────────────
@@ -80,6 +83,7 @@ class DrawingApp {
     (document.getElementById('colorPicker') as HTMLInputElement).value = hex;
     document.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
     swatchBtn?.classList.add('active');
+    track('color_changed', { color: hex, source: 'swatch' });
   }
 
   // ── Control wiring ───────────────────────────────────────────────────────
@@ -91,30 +95,35 @@ class DrawingApp {
         document.querySelectorAll('[data-tool]').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         document.body.className = `tool-${this.tool}`;
+        track('tool_selected', { tool: this.tool, source: 'click' });
       });
     });
 
     // Custom color picker
     const picker = document.getElementById('colorPicker') as HTMLInputElement;
-    picker.addEventListener('input', () => {
+    picker.addEventListener('change', () => {
       this.color = picker.value;
       document.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
+      track('color_changed', { color: this.color, source: 'picker' });
     });
 
     // Stroke width
     const strokeInput = document.getElementById('strokeWidth') as HTMLInputElement;
     const strokeLabel = document.getElementById('strokeValue')!;
-    strokeInput.addEventListener('input', () => {
+    strokeInput.addEventListener('change', () => {
       this.lineWidth = +strokeInput.value;
       strokeLabel.textContent = `${strokeInput.value}px`;
+      track('stroke_width_changed', { stroke_width: this.lineWidth });
     });
 
     // Undo / Clear
     document.getElementById('undoBtn')!.addEventListener('click', () => {
       this.shapes.pop();
       this.redraw();
+      track('undo', { shapes_remaining: this.shapes.length, source: 'button' });
     });
     document.getElementById('clearBtn')!.addEventListener('click', () => {
+      track('canvas_cleared', { shapes_cleared: this.shapes.length });
       this.shapes = [];
       this.redraw();
     });
@@ -127,11 +136,13 @@ class DrawingApp {
       if (t) {
         const btn = document.querySelector<HTMLButtonElement>(`[data-tool="${t}"]`)!;
         btn.click();
+        track('tool_selected', { tool: t, source: 'keyboard' });
       }
       if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
         e.preventDefault();
         this.shapes.pop();
         this.redraw();
+        track('undo', { shapes_remaining: this.shapes.length, source: 'keyboard' });
       }
     });
   }
@@ -199,6 +210,12 @@ class DrawingApp {
         end,
         color: this.color,
         lineWidth: this.lineWidth,
+      });
+      track('shape_drawn', {
+        tool: this.tool,
+        color: this.color,
+        stroke_width: this.lineWidth,
+        size: Math.round(Math.hypot(dx, dy)),
       });
     }
     this.redraw();

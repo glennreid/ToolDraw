@@ -236,6 +236,42 @@
 // ── Types & constants ───────────────────────────────────────────────────────
 // @ts-check  (TypeScript source lives in src/main.ts)
 
+// ── Telemetry ────────────────────────────────────────────────────────────────
+const TELEMETRY_ENDPOINT = 'https://data.usebutter.com/events';
+const FLUSH_INTERVAL_MS = 30_000;
+const MAX_QUEUE = 100;
+const sessionId = Math.random().toString(36).slice(2) + Date.now().toString(36);
+const telemetryQueue = [];
+
+function track(event, properties = {}) {
+  telemetryQueue.push({ event, properties, timestamp: new Date().toISOString() });
+  if (telemetryQueue.length >= MAX_QUEUE) flushTelemetry();
+}
+
+async function flushTelemetry() {
+  if (telemetryQueue.length === 0) return;
+  const events = telemetryQueue.splice(0);
+  try {
+    await fetch(TELEMETRY_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: sessionId, events }),
+    });
+  } catch { /* never disrupt drawing */ }
+}
+
+function flushBeacon() {
+  if (telemetryQueue.length === 0) return;
+  const events = telemetryQueue.splice(0);
+  navigator.sendBeacon(TELEMETRY_ENDPOINT, JSON.stringify({ session_id: sessionId, events }));
+}
+
+setInterval(flushTelemetry, FLUSH_INTERVAL_MS);
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') flushBeacon();
+});
+window.addEventListener('beforeunload', flushBeacon);
+
 const SWATCHES = [
   '#1a1a2e','#e94560','#4a90d9','#50c878','#f5a623',
   '#9b59b6','#e74c3c','#1abc9c','#f39c12','#ffffff',
@@ -289,6 +325,7 @@ function setColor(hex, swatchBtn) {
   picker.value = hex;
   document.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
   if (swatchBtn) swatchBtn.classList.add('active');
+  track('color_changed', { color: hex, source: 'swatch' });
 }
 
 // ── Controls ──────────────────────────────────────────────────────────────────
@@ -298,23 +335,28 @@ document.querySelectorAll('[data-tool]').forEach(btn => {
     document.querySelectorAll('[data-tool]').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     document.body.className = 'tool-' + tool;
+    track('tool_selected', { tool, source: 'click' });
   });
 });
 
-picker.addEventListener('input', () => {
+picker.addEventListener('change', () => {
   color = picker.value;
   document.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
+  track('color_changed', { color, source: 'picker' });
 });
 
-slider.addEventListener('input', () => {
+slider.addEventListener('change', () => {
   lineWidth = +slider.value;
   sliderLabel.textContent = slider.value + 'px';
+  track('stroke_width_changed', { stroke_width: lineWidth });
 });
 
 document.getElementById('undoBtn').addEventListener('click', () => {
   shapes.pop(); redraw();
+  track('undo', { shapes_remaining: shapes.length, source: 'button' });
 });
 document.getElementById('clearBtn').addEventListener('click', () => {
+  track('canvas_cleared', { shapes_cleared: shapes.length });
   shapes = []; redraw();
 });
 
@@ -322,10 +364,14 @@ window.addEventListener('keydown', e => {
   if (e.target instanceof HTMLInputElement) return;
   const map = { l: 'line', c: 'circle', r: 'rectangle' };
   const t = map[e.key.toLowerCase()];
-  if (t) document.querySelector('[data-tool="' + t + '"]').click();
+  if (t) {
+    document.querySelector('[data-tool="' + t + '"]').click();
+    track('tool_selected', { tool: t, source: 'keyboard' });
+  }
   if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
     e.preventDefault();
     shapes.pop(); redraw();
+    track('undo', { shapes_remaining: shapes.length, source: 'keyboard' });
   }
 });
 
@@ -365,8 +411,15 @@ function commit(end) {
   if (!drawing) return;
   drawing = false;
   const dx = end.x - origin.x, dy = end.y - origin.y;
-  if (Math.hypot(dx, dy) > 1)
+  if (Math.hypot(dx, dy) > 1) {
     shapes.push({ tool, start: { ...origin }, end, color, lineWidth });
+    track('shape_drawn', {
+      tool,
+      color,
+      stroke_width: lineWidth,
+      size: Math.round(Math.hypot(dx, dy)),
+    });
+  }
   redraw();
 }
 
@@ -426,6 +479,7 @@ function renderShape(s, isPreview) {
 }
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
+track('session_start', { screen_width: window.innerWidth, screen_height: window.innerHeight });
 resizeCanvas();
 </script>
 </body>
