@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(source ~/.zshrc)",
+      "Bash(echo \"PATH=$PATH\")",
+      "Read(//Volumes/T31/radioconda/**)",
+      "Bash(/usr/local/bin/node -v)",
+      "Read(//usr/local/bin/**)",
+      "Read(//opt/homebrew/bin/**)",
+      "Read(//usr/local/Homebrew/bin/**)",
+      "Bash(/opt/homebrew/bin/brew list)",
+      "Bash(ls /opt/homebrew/bin/node* /opt/homebrew/bin/npm* /opt/homebrew/bin/bun*)",
+      "Bash(open /Users/glenn/CODE/ToolDraw/index.html)",
+      "Read(//opt/homebrew/opt/**)",
+      "Read(//opt/homebrew/Cellar/**)",
+      "Bash(/opt/homebrew/bin/brew --prefix node)",
+      "Bash(/opt/homebrew/bin/brew install node)"
+    ]
+  }
+}

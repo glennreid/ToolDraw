@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ToolDraw</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #1a1a2e;
+    }
+
+    /* ── Sidebar ─────────────────────────────────────────────── */
+    #sidebar {
+      width: 220px;
+      min-width: 220px;
+      background: #16213e;
+      border-right: 1px solid #0f3460;
+      display: flex;
+      flex-direction: column;
+      padding: 20px 14px;
+      gap: 22px;
+      overflow-y: auto;
+    }
+
+    .logo {
+      font-size: 20px;
+      font-weight: 700;
+      color: #e94560;
+      letter-spacing: 1px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid #0f3460;
+    }
+
+    .section-label {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: #5a6a8a;
+      margin-bottom: 8px;
+    }
+
+    /* ── Tool buttons ──────────────────────────────────────── */
+    .tool-group { display: flex; flex-direction: column; gap: 6px; }
+
+    .tool-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border: 1.5px solid transparent;
+      border-radius: 8px;
+      background: transparent;
+      color: #8892a4;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+      user-select: none;
+    }
+    .tool-btn:hover  { background: #1e2d50; color: #c8d6f0; }
+    .tool-btn.active { background: #1e3a6e; border-color: #4a90d9; color: #7ec8ff; }
+    .tool-btn svg    { flex-shrink: 0; }
+
+    /* ── Color ─────────────────────────────────────────────── */
+    .color-section { display: flex; flex-direction: column; gap: 10px; }
+
+    .swatches {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+    }
+    .swatch {
+      width: 100%; aspect-ratio: 1;
+      border-radius: 5px;
+      border: 2px solid transparent;
+      cursor: pointer;
+      transition: transform 0.1s, border-color 0.1s;
+    }
+    .swatch:hover  { transform: scale(1.15); }
+    .swatch.active { border-color: #ffffff; transform: scale(1.1); }
+
+    .picker-row {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .picker-label { font-size: 12px; color: #8892a4; flex: 1; }
+
+    input[type="color"] {
+      width: 36px; height: 28px;
+      border: 1.5px solid #2a3a5a;
+      border-radius: 6px; padding: 2px;
+      background: #1e2d50; cursor: pointer;
+    }
+
+    /* ── Stroke ────────────────────────────────────────────── */
+    .stroke-section { display: flex; flex-direction: column; gap: 8px; }
+    .stroke-row {
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .stroke-val {
+      font-size: 12px; color: #7ec8ff; font-weight: 600;
+      min-width: 28px; text-align: right;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      width: 100%; height: 4px;
+      border-radius: 2px; background: #2a3a5a;
+      outline: none; cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px; height: 14px;
+      border-radius: 50%; background: #4a90d9;
+      cursor: pointer; transition: background 0.15s;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover { background: #7ec8ff; }
+
+    /* ── Action buttons ────────────────────────────────────── */
+    .action-group {
+      display: flex; flex-direction: column; gap: 6px;
+      margin-top: auto;
+    }
+    .action-btn {
+      display: flex; align-items: center;
+      justify-content: center; gap: 7px;
+      padding: 9px 12px;
+      border-radius: 8px; border: 1.5px solid transparent;
+      font-size: 12px; font-weight: 600;
+      cursor: pointer; transition: background 0.15s, border-color 0.15s;
+    }
+    #undoBtn  { background: #1e2d50; border-color: #2a3a6a; color: #8892a4; }
+    #undoBtn:hover  { background: #263656; color: #c8d6f0; }
+    #clearBtn { background: transparent; border-color: #5a2030; color: #e94560; }
+    #clearBtn:hover { background: #3a1020; }
+
+    /* ── Canvas ────────────────────────────────────────────── */
+    #canvas-wrap {
+      flex: 1; position: relative;
+      background: #f8f9fb; overflow: hidden;
+    }
+    #canvas {
+      display: block; width: 100%; height: 100%;
+    }
+    body.tool-line      #canvas { cursor: crosshair; }
+    body.tool-circle    #canvas { cursor: cell; }
+    body.tool-rectangle #canvas { cursor: crosshair; }
+  </style>
+</head>
+<body class="tool-line">
+
+  <aside id="sidebar">
+
+    <div class="logo">ToolDraw</div>
+
+    <!-- Tools -->
+    <div>
+      <div class="section-label">Tools</div>
+      <div class="tool-group">
+
+        <button class="tool-btn active" data-tool="line" title="Line (L)">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <line x1="2" y1="16" x2="16" y2="2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          Line Segment
+        </button>
+
+        <button class="tool-btn" data-tool="circle" title="Circle (C)">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <circle cx="9" cy="9" r="7" stroke="currentColor" stroke-width="2"/>
+          </svg>
+          Circle
+        </button>
+
+        <button class="tool-btn" data-tool="rectangle" title="Rectangle (R)">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <rect x="2" y="4" width="14" height="10" rx="1.5" stroke="currentColor" stroke-width="2"/>
+          </svg>
+          Rectangle
+        </button>
+
+      </div>
+    </div>
+
+    <!-- Color -->
+    <div class="color-section">
+      <div class="section-label">Color</div>
+      <div class="swatches" id="swatches"></div>
+      <div class="picker-row">
+        <span class="picker-label">Custom</span>
+        <input type="color" id="colorPicker" value="#1a1a2e" />
+      </div>
+    </div>
+
+    <!-- Stroke width -->
+    <div class="stroke-section">
+      <div class="section-label">Stroke Width</div>
+      <div class="stroke-row">
+        <span class="picker-label">Width</span>
+        <span class="stroke-val" id="strokeVal">2px</span>
+      </div>
+      <input type="range" id="strokeWidth" min="1" max="24" value="2" step="1" />
+    </div>
+
+    <!-- Actions -->
+    <div class="action-group">
+      <button class="action-btn" id="undoBtn">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M2 7a5 5 0 1 0 1.5-3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          <polyline points="1,1 1,5 5,5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Undo
+      </button>
+      <button class="action-btn" id="clearBtn">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <line x1="1" y1="3" x2="13" y2="3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M5 3V2h4v1M2 3l1 9h6l1-9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Clear Canvas
+      </button>
+    </div>
+
+  </aside>
+
+  <main id="canvas-wrap">
+    <canvas id="canvas"></canvas>
+  </main>
+
+<script>
+// ── Types & constants ───────────────────────────────────────────────────────
+// @ts-check  (TypeScript source lives in src/main.ts)
+
+const SWATCHES = [
+  '#1a1a2e','#e94560','#4a90d9','#50c878','#f5a623',
+  '#9b59b6','#e74c3c','#1abc9c','#f39c12','#ffffff',
+];
+
+// ── State ────────────────────────────────────────────────────────────────────
+/** @type {'line'|'circle'|'rectangle'} */
+let tool = 'line';
+let color = '#1a1a2e';
+let lineWidth = 2;
+let drawing = false;
+/** @type {{x:number,y:number}} */
+let origin = { x: 0, y: 0 };
+/** @type {Array<{tool:string,start:{x:number,y:number},end:{x:number,y:number},color:string,lineWidth:number}>} */
+let shapes = [];
+
+// ── DOM refs ─────────────────────────────────────────────────────────────────
+const canvas  = /** @type {HTMLCanvasElement} */ (document.getElementById('canvas'));
+const ctx     = /** @type {CanvasRenderingContext2D} */ (canvas.getContext('2d'));
+const picker  = /** @type {HTMLInputElement} */ (document.getElementById('colorPicker'));
+const slider  = /** @type {HTMLInputElement} */ (document.getElementById('strokeWidth'));
+const sliderLabel = document.getElementById('strokeVal');
+
+// ── Canvas sizing ─────────────────────────────────────────────────────────────
+function resizeCanvas() {
+  const wrap = canvas.parentElement;
+  const tmp = document.createElement('canvas');
+  tmp.width  = canvas.width  || wrap.clientWidth;
+  tmp.height = canvas.height || wrap.clientHeight;
+  tmp.getContext('2d').drawImage(canvas, 0, 0);
+  canvas.width  = wrap.clientWidth;
+  canvas.height = wrap.clientHeight;
+  ctx.drawImage(tmp, 0, 0);
+  redraw();
+}
+window.addEventListener('resize', resizeCanvas);
+
+// ── Swatches ──────────────────────────────────────────────────────────────────
+const swatchGrid = document.getElementById('swatches');
+SWATCHES.forEach(hex => {
+  const btn = document.createElement('button');
+  btn.className = 'swatch' + (hex === color ? ' active' : '');
+  btn.style.background = hex;
+  btn.title = hex;
+  btn.addEventListener('click', () => setColor(hex, btn));
+  swatchGrid.appendChild(btn);
+});
+
+function setColor(hex, swatchBtn) {
+  color = hex;
+  picker.value = hex;
+  document.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
+  if (swatchBtn) swatchBtn.classList.add('active');
+}
+
+// ── Controls ──────────────────────────────────────────────────────────────────
+document.querySelectorAll('[data-tool]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    tool = btn.dataset.tool;
+    document.querySelectorAll('[data-tool]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.body.className = 'tool-' + tool;
+  });
+});
+
+picker.addEventListener('input', () => {
+  color = picker.value;
+  document.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
+});
+
+slider.addEventListener('input', () => {
+  lineWidth = +slider.value;
+  sliderLabel.textContent = slider.value + 'px';
+});
+
+document.getElementById('undoBtn').addEventListener('click', () => {
+  shapes.pop(); redraw();
+});
+document.getElementById('clearBtn').addEventListener('click', () => {
+  shapes = []; redraw();
+});
+
+window.addEventListener('keydown', e => {
+  if (e.target instanceof HTMLInputElement) return;
+  const map = { l: 'line', c: 'circle', r: 'rectangle' };
+  const t = map[e.key.toLowerCase()];
+  if (t) document.querySelector('[data-tool="' + t + '"]').click();
+  if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+    e.preventDefault();
+    shapes.pop(); redraw();
+  }
+});
+
+// ── Canvas events ─────────────────────────────────────────────────────────────
+function pt(e) {
+  const r = canvas.getBoundingClientRect();
+  return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
+
+canvas.addEventListener('mousedown', e => { drawing = true; origin = pt(e); });
+canvas.addEventListener('mousemove', e => {
+  if (!drawing) return;
+  redraw({ tool, start: origin, end: pt(e), color, lineWidth });
+});
+canvas.addEventListener('mouseup',    e => commit(pt(e)));
+canvas.addEventListener('mouseleave', e => commit(pt(e)));
+
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  const t = e.touches[0];
+  drawing = true;
+  origin = pt(t);
+}, { passive: false });
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  if (!drawing) return;
+  const t = e.touches[0];
+  redraw({ tool, start: origin, end: pt(t), color, lineWidth });
+}, { passive: false });
+canvas.addEventListener('touchend', e => {
+  e.preventDefault();
+  const t = e.changedTouches[0];
+  commit(pt(t));
+}, { passive: false });
+
+function commit(end) {
+  if (!drawing) return;
+  drawing = false;
+  const dx = end.x - origin.x, dy = end.y - origin.y;
+  if (Math.hypot(dx, dy) > 1)
+    shapes.push({ tool, start: { ...origin }, end, color, lineWidth });
+  redraw();
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function redraw(preview) {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawGrid();
+  shapes.forEach(s => renderShape(s, false));
+  if (preview) renderShape(preview, true);
+}
+
+function drawGrid() {
+  const step = 28;
+  ctx.save();
+  ctx.strokeStyle = 'rgba(0,0,0,0.055)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x <= canvas.width; x += step) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+  }
+  for (let y = 0; y <= canvas.height; y += step) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function renderShape(s, isPreview) {
+  ctx.save();
+  ctx.strokeStyle = s.color;
+  ctx.lineWidth   = s.lineWidth;
+  ctx.lineCap     = 'round';
+  ctx.lineJoin    = 'round';
+  if (isPreview) ctx.globalAlpha = 0.55;
+
+  if (s.tool === 'line') {
+    ctx.beginPath();
+    ctx.moveTo(s.start.x, s.start.y);
+    ctx.lineTo(s.end.x,   s.end.y);
+    ctx.stroke();
+
+  } else if (s.tool === 'circle') {
+    const r = Math.hypot(s.end.x - s.start.x, s.end.y - s.start.y);
+    ctx.beginPath();
+    ctx.arc(s.start.x, s.start.y, r, 0, Math.PI * 2);
+    ctx.stroke();
+
+  } else if (s.tool === 'rectangle') {
+    const x = Math.min(s.start.x, s.end.x);
+    const y = Math.min(s.start.y, s.end.y);
+    const w = Math.abs(s.end.x - s.start.x);
+    const h = Math.abs(s.end.y - s.start.y);
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, 2);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+resizeCanvas();
+</script>
+</body>
+</html>
