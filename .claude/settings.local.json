@@ -14,7 +14,13 @@
       "Read(//opt/homebrew/opt/**)",
       "Read(//opt/homebrew/Cellar/**)",
       "Bash(/opt/homebrew/bin/brew --prefix node)",
-      "Bash(/opt/homebrew/bin/brew install node)"
+      "Bash(/opt/homebrew/bin/brew install node)",
+      "Bash(/opt/homebrew/bin/node --version)",
+      "Bash(/opt/homebrew/bin/npm --version)",
+      "Bash(/opt/homebrew/Cellar/node/25.8.1_1/bin/node --version)",
+      "Bash(PATH=\"/opt/homebrew/bin:$PATH\" npm install)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(chmod +x /Users/glenn/CODE/ToolDraw/dev.sh)"
     ]
   }
 }
