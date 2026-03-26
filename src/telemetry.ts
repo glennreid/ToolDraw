@@ -1,4 +1,4 @@
-const ENDPOINT = 'https://data.usebutter.com/events';
+const ENDPOINT = 'https://data.example.com/events';
 const FLUSH_INTERVAL_MS = 30_000;
 const MAX_QUEUE = 100;
 
