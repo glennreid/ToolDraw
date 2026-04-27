@@ -20,7 +20,22 @@
       "Bash(/opt/homebrew/Cellar/node/25.8.1_1/bin/node --version)",
       "Bash(PATH=\"/opt/homebrew/bin:$PATH\" npm install)",
       "mcp__Claude_Preview__preview_start",
-      "Bash(chmod +x /Users/glenn/CODE/ToolDraw/dev.sh)"
+      "Bash(chmod +x /Users/glenn/CODE/ToolDraw/dev.sh)",
+      "WebFetch(domain:beluga.mobi)",
+      "WebSearch",
+      "WebFetch(domain:commons.wikimedia.org)",
+      "WebFetch(domain:manuals.plus)",
+      "WebFetch(domain:endless-sphere.com)",
+      "Read(//Users/glenn/CODE/GRemoteControl/GRemoteControl/**)",
+      "Bash(xcodebuild -scheme GRemoteControl -destination 'generic/platform=iOS Simulator' -configuration Debug build)",
+      "Bash(sudo xcode-select *)",
+      "Bash(DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -scheme GRemoteControl -destination 'generic/platform=iOS Simulator' -configuration Debug build -project /Users/glenn/CODE/GRemoteControl/GRemoteControl/GRemoteControl.xcodeproj)",
+      "Bash(grep -E \"\\\\.\\(m|h|c\\)$\")",
+      "Bash(DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -scheme \"GR Nav System\" -destination 'platform=iOS Simulator,name=iPad Pro 13-inch \\(M4\\)' -configuration Debug build -project \"/Users/glenn/CODE/GRNav/GR Nav System.xcodeproj\")",
+      "Bash(DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -scheme \"GR Nav System\" -destination 'generic/platform=iOS Simulator' -configuration Debug build -project \"/Users/glenn/CODE/GRNav/GR Nav System.xcodeproj\")",
+      "Read(//Users/glenn/CODE/BIDAR/**)",
+      "Read(//Users/glenn/Documents/Arduino/libraries/**)",
+      "Read(//Users/glenn/Library/**)"
     ]
   }
 }
